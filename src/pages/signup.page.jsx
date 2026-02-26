@@ -62,7 +62,7 @@ const SignUpPage = () => {
       </div>
 
       <div className="flex flex-col justify-center items-center bg-white w-full md:w-1/2 p-10">
-        <h2 className="text-3xl font-bold text-blue-800 mb-2">Admin Panel</h2>
+        <h2 className="text-3xl font-bold text-blue-800 mb-2">Teachers</h2>
         <p className="text-sm text-gray-500 mb-8">Create your admin account</p>
 
         {error && (

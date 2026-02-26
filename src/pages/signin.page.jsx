@@ -55,7 +55,7 @@ const SignInPage = () => {
       </div>
 
       <div className="flex flex-col justify-center items-center bg-white w-full md:w-1/2 p-10">
-        <h2 className="text-3xl font-bold text-blue-800 mb-6">Admin Panel</h2>
+        <h2 className="text-3xl font-bold text-blue-800 mb-6">Teachers</h2>
 
         {error && (
           <div className="w-full max-w-sm mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
