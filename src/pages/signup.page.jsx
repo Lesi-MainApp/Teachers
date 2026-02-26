@@ -13,7 +13,7 @@ const SignUpPage = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "admin",
+    role: "teacher",
   });
 
   const [error, setError] = useState("");
@@ -34,17 +34,16 @@ const SignUpPage = () => {
 
     try {
       const payload = {
-        name: form.name,
-        whatsappnumber: form.whatsappnumber,
-        email: form.email,
+        name: form.name.trim(),
+        whatsappnumber: form.whatsappnumber.trim(),
+        email: form.email.trim(),
         password: form.password,
-        role: "admin",
+        role: "teacher",
       };
 
       const res = await signUp(payload).unwrap();
       const phone = res?.user?.phonenumber || form.whatsappnumber;
 
-      // signup -> otp(signup) -> signin
       navigate(`/otp?flow=signup&phone=${encodeURIComponent(phone)}`);
     } catch (err) {
       setError(err?.data?.message || "Signup failed");
@@ -52,41 +51,41 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen w-full">
-      <div className="hidden md:flex w-full md:w-1/2">
+    <div className="flex h-screen w-full flex-col md:flex-row">
+      <div className="hidden w-full md:flex md:w-1/2">
         <img
           src={signimage}
           alt="Sign up illustration"
-          className="w-full h-full object-cover"
+          className="h-full w-full object-cover"
         />
       </div>
 
-      <div className="flex flex-col justify-center items-center bg-white w-full md:w-1/2 p-10">
-        <h2 className="text-3xl font-bold text-blue-800 mb-2">Teachers</h2>
-        <p className="text-sm text-gray-500 mb-8">Create your admin account</p>
+      <div className="flex w-full flex-col items-center justify-center bg-white p-10 md:w-1/2">
+        <h2 className="mb-2 text-3xl font-bold text-blue-800">Teachers</h2>
+        <p className="mb-8 text-sm text-gray-500">Create your teacher account</p>
 
         {error && (
-          <div className="w-full max-w-sm mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+          <div className="mb-4 w-full max-w-sm rounded-lg bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
         <form className="w-full max-w-sm" onSubmit={onSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm mb-2">Name</label>
+            <label className="mb-2 block text-sm text-gray-700">Name</label>
             <input
               name="name"
               value={form.name}
               onChange={onChange}
               type="text"
               placeholder="Enter your name"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm mb-2">
+            <label className="mb-2 block text-sm text-gray-700">
               WhatsApp Number
             </label>
             <input
@@ -95,39 +94,39 @@ const SignUpPage = () => {
               onChange={onChange}
               type="tel"
               placeholder="Enter your WhatsApp number"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm mb-2">Email</label>
+            <label className="mb-2 block text-sm text-gray-700">Email</label>
             <input
               name="email"
               value={form.email}
               onChange={onChange}
               type="email"
               placeholder="Enter your email"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm mb-2">Password</label>
+            <label className="mb-2 block text-sm text-gray-700">Password</label>
             <input
               name="password"
               value={form.password}
               onChange={onChange}
               type="password"
               placeholder="Enter your password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm mb-2">
+            <label className="mb-2 block text-sm text-gray-700">
               Confirm Password
             </label>
             <input
@@ -136,7 +135,7 @@ const SignUpPage = () => {
               onChange={onChange}
               type="password"
               placeholder="Confirm your password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -144,16 +143,16 @@ const SignUpPage = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-60"
+            className="w-full rounded-lg bg-blue-600 py-2 text-white transition duration-200 hover:bg-blue-700 disabled:opacity-60"
           >
             {isLoading ? "Signing Up..." : "Sign Up"}
           </button>
 
-          <p className="text-sm text-gray-600 mt-4 text-center">
+          <p className="mt-4 text-center text-sm text-gray-600">
             Have an account?{" "}
             <Link
               to="/signin"
-              className="text-blue-700 font-semibold hover:underline"
+              className="font-semibold text-blue-700 hover:underline"
             >
               Sign In
             </Link>

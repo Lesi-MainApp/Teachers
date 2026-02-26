@@ -51,17 +51,13 @@ const PaperReport = () => {
   const navigate = useNavigate();
 
   // ---- filter state ----
-  const [status, setStatus] = useState("");
-  const [paperId, setPaperId] = useState("");
-  const [grade, setGrade] = useState("");
-  const [subject, setSubject] = useState("");
-  const [district, setDistrict] = useState("");
-  const [town, setTown] = useState("");
   const [paperName, setPaperName] = useState("");
+  const [subject, setSubject] = useState("");
+  const [grade, setGrade] = useState("");
+  const [completedCount, setCompletedCount] = useState("");
 
   // ---- dropdown options (replace with API later) ----
-  const statusOptions = ["Published", "Draft", "Pending"];
-  const paperIdOptions = ["PR-001", "PR-002", "PR-003", "PR-004"];
+  const subjectOptions = ["Maths", "Science", "English", "ICT", "History", "Tamil"];
   const gradeOptions = [
     "Grade 06",
     "Grade 07",
@@ -70,9 +66,7 @@ const PaperReport = () => {
     "Grade 10",
     "Grade 11",
   ];
-  const subjectOptions = ["Maths", "Science", "English", "ICT", "History", "Tamil"];
-  const districtOptions = ["Colombo", "Gampaha", "Kandy"];
-  const townOptions = ["Dehiwala", "Maharagama", "Kiribathgoda", "Peradeniya"];
+  const completedCountOptions = ["0", "1-25", "26-50", "51-100", "100+"];
 
   // ---- sample table data (replace with API later) ----
   const rows = useMemo(
@@ -82,52 +76,44 @@ const PaperReport = () => {
         paperName: "Maths Term 1",
         grade: "Grade 06",
         subject: "Maths",
-        district: "Colombo",
-        town: "Dehiwala",
-        totalStudents: 120,
-        submitted: 80,
-        avgMarks: 67,
-        date: "2026-01-10",
-        status: "Published",
+        time: "45 min",
+        questionCount: 25,
+        createdBy: "Mr. Silva",
+        completedStudents: 80,
+        completedRange: "51-100",
       },
       {
         paperId: "PR-002",
         paperName: "Science Unit Test",
         grade: "Grade 08",
         subject: "Science",
-        district: "Gampaha",
-        town: "Kiribathgoda",
-        totalStudents: 95,
-        submitted: 40,
-        avgMarks: 54,
-        date: "2026-01-12",
-        status: "Draft",
+        time: "60 min",
+        questionCount: 30,
+        createdBy: "Mrs. Perera",
+        completedStudents: 40,
+        completedRange: "26-50",
       },
       {
         paperId: "PR-003",
         paperName: "English Term 1",
         grade: "Grade 07",
         subject: "English",
-        district: "Kandy",
-        town: "Peradeniya",
-        totalStudents: 70,
-        submitted: 65,
-        avgMarks: 74,
-        date: "2026-01-15",
-        status: "Published",
+        time: "30 min",
+        questionCount: 20,
+        createdBy: "Ms. Fernando",
+        completedStudents: 65,
+        completedRange: "51-100",
       },
       {
         paperId: "PR-004",
         paperName: "ICT Term 1",
         grade: "Grade 09",
         subject: "ICT",
-        district: "Colombo",
-        town: "Maharagama",
-        totalStudents: 110,
-        submitted: 0,
-        avgMarks: 0,
-        date: "2026-01-18",
-        status: "Pending",
+        time: "50 min",
+        questionCount: 35,
+        createdBy: "Mr. Jayasinghe",
+        completedStudents: 0,
+        completedRange: "0",
       },
     ],
     []
@@ -136,51 +122,28 @@ const PaperReport = () => {
   // ---- filtering ----
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
-      if (status && r.status !== status) return false;
-      if (paperId && r.paperId !== paperId) return false;
-      if (grade && r.grade !== grade) return false;
-      if (subject && r.subject !== subject) return false;
-      if (district && r.district !== district) return false;
-      if (town && r.town !== town) return false;
       if (
         paperName &&
         !r.paperName.toLowerCase().includes(paperName.trim().toLowerCase())
-      )
+      ) {
         return false;
+      }
+      if (subject && r.subject !== subject) return false;
+      if (grade && r.grade !== grade) return false;
+      if (completedCount && r.completedRange !== completedCount) return false;
       return true;
     });
-  }, [rows, status, paperId, grade, subject, district, town, paperName]);
+  }, [rows, paperName, subject, grade, completedCount]);
 
   const handleSearch = (e) => {
     e.preventDefault();
   };
 
   const handleReset = () => {
-    setStatus("");
-    setPaperId("");
-    setGrade("");
-    setSubject("");
-    setDistrict("");
-    setTown("");
     setPaperName("");
-  };
-
-  const statusBadge = (value) => {
-    const map = {
-      Published: "border-green-200 bg-green-50 text-green-700",
-      Draft: "border-gray-200 bg-gray-100 text-gray-700",
-      Pending: "border-yellow-200 bg-yellow-50 text-yellow-700",
-    };
-
-    return (
-      <span
-        className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-          map[value] || "border-gray-200 bg-gray-50 text-gray-700"
-        }`}
-      >
-        {value}
-      </span>
-    );
+    setSubject("");
+    setGrade("");
+    setCompletedCount("");
   };
 
   return (
@@ -193,7 +156,7 @@ const PaperReport = () => {
               Paper Report
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Filter and review paper performance records.
+              Filter and review paper report records.
             </p>
           </div>
 
@@ -225,30 +188,6 @@ const PaperReport = () => {
           className="mt-5 border border-gray-200 bg-white p-4 sm:p-5"
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Select
-              label="Status"
-              value={status}
-              onChange={setStatus}
-              options={statusOptions}
-              placeholder="Select"
-            />
-
-            <Select
-              label="Paper ID"
-              value={paperId}
-              onChange={setPaperId}
-              options={paperIdOptions}
-              placeholder="Select"
-            />
-
-            <Select
-              label="Grade"
-              value={grade}
-              onChange={setGrade}
-              options={gradeOptions}
-              placeholder="Select"
-            />
-
             <Input
               label="Paper Name"
               value={paperName}
@@ -265,18 +204,18 @@ const PaperReport = () => {
             />
 
             <Select
-              label="District"
-              value={district}
-              onChange={setDistrict}
-              options={districtOptions}
+              label="Grade"
+              value={grade}
+              onChange={setGrade}
+              options={gradeOptions}
               placeholder="Select"
             />
 
             <Select
-              label="Town"
-              value={town}
-              onChange={setTown}
-              options={townOptions}
+              label="Paper Completed Student Count"
+              value={completedCount}
+              onChange={setCompletedCount}
+              options={completedCountOptions}
               placeholder="Select"
             />
           </div>
@@ -306,21 +245,16 @@ const PaperReport = () => {
         {/* Table */}
         <div className="mt-5 overflow-hidden border border-gray-200 bg-white">
           <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-[1500px] table-fixed border-separate border-spacing-0">
+            <table className="w-full min-w-[1200px] table-fixed border-separate border-spacing-0">
               <thead>
                 <tr>
-                  <Th className="w-[8%]">Paper ID</Th>
-                  <Th className="w-[14%]">Paper Name</Th>
-                  <Th className="w-[8%]">Grade</Th>
-                  <Th className="w-[8%]">Subject</Th>
-                  <Th className="w-[8%]">District</Th>
-                  <Th className="w-[8%]">Town</Th>
-                  <Th className="w-[9%]">Total Students</Th>
-                  <Th className="w-[8%]">Submitted</Th>
-                  <Th className="w-[8%]">Avg Marks</Th>
-                  <Th className="w-[10%]">Date</Th>
-                  <Th className="w-[9%]">Status</Th>
-                  <Th className="w-[12%] border-r-0 text-center">Operation</Th>
+                  <Th className="w-[20%]">Paper Name</Th>
+                  <Th className="w-[12%]">Grade</Th>
+                  <Th className="w-[12%]">Subject</Th>
+                  <Th className="w-[12%]">Time</Th>
+                  <Th className="w-[12%]">Question Count</Th>
+                  <Th className="w-[16%]">Created By</Th>
+                  <Th className="w-[16%] border-r-0">Paper Completed Count</Th>
                 </tr>
               </thead>
 
@@ -329,7 +263,7 @@ const PaperReport = () => {
                   <tr>
                     <td
                       className="px-6 py-10 text-center text-gray-500"
-                      colSpan={12}
+                      colSpan={7}
                     >
                       No paper reports found
                     </td>
@@ -338,42 +272,15 @@ const PaperReport = () => {
                   filteredRows.map((p) => (
                     <tr key={p.paperId} className="hover:bg-gray-50/70">
                       <Td className="truncate font-medium text-gray-800">
-                        {p.paperId}
+                        {p.paperName}
                       </Td>
-                      <Td className="truncate">{p.paperName}</Td>
                       <Td className="truncate">{p.grade}</Td>
                       <Td className="truncate">{p.subject}</Td>
-                      <Td className="truncate">{p.district}</Td>
-                      <Td className="truncate">{p.town}</Td>
-                      <Td className="truncate">{p.totalStudents}</Td>
-                      <Td className="truncate">{p.submitted}</Td>
-                      <Td className="truncate">{p.avgMarks}</Td>
-                      <Td className="truncate">{p.date}</Td>
-                      <Td>{statusBadge(p.status)}</Td>
-
-                      <Td className="border-r-0 text-center">
-                        <div className="flex flex-wrap justify-center gap-2">
-                          <button
-                            type="button"
-                            className="rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-blue-700"
-                          >
-                            View
-                          </button>
-
-                          <button
-                            type="button"
-                            className="rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-amber-600"
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            type="button"
-                            className="rounded-lg bg-red-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-red-700"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                      <Td className="truncate">{p.time}</Td>
+                      <Td className="truncate">{p.questionCount}</Td>
+                      <Td className="truncate">{p.createdBy}</Td>
+                      <Td className="truncate border-r-0">
+                        {p.completedStudents}
                       </Td>
                     </tr>
                   ))

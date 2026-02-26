@@ -36,7 +36,9 @@ const SignInPage = () => {
       const msg = err?.data?.message || "Sign in failed";
 
       if (msg.toLowerCase().includes("not verified")) {
-        navigate(`/otp?flow=signup&phone=${encodeURIComponent(form.whatsappnumber)}`);
+        navigate(
+          `/otp?flow=signup&phone=${encodeURIComponent(form.whatsappnumber)}`
+        );
         return;
       }
 
@@ -45,27 +47,27 @@ const SignInPage = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen w-full">
-      <div className="hidden md:flex w-full md:w-1/2">
+    <div className="flex h-screen w-full flex-col md:flex-row">
+      <div className="hidden w-full md:flex md:w-1/2">
         <img
           src={signimage}
           alt="Sign in illustration"
-          className="w-full h-full object-cover"
+          className="h-full w-full object-cover"
         />
       </div>
 
-      <div className="flex flex-col justify-center items-center bg-white w-full md:w-1/2 p-10">
-        <h2 className="text-3xl font-bold text-blue-800 mb-6">Teachers</h2>
+      <div className="flex w-full flex-col items-center justify-center bg-white p-10 md:w-1/2">
+        <h2 className="mb-6 text-3xl font-bold text-blue-800">Teachers</h2>
 
         {error && (
-          <div className="w-full max-w-sm mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+          <div className="mb-4 w-full max-w-sm rounded-lg bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
         <form className="w-full max-w-sm" onSubmit={onSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm mb-2">
+            <label className="mb-2 block text-sm text-gray-700">
               WhatsApp Number
             </label>
             <input
@@ -74,28 +76,28 @@ const SignInPage = () => {
               onChange={onChange}
               type="tel"
               placeholder="Enter your WhatsApp number"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div className="mb-1">
-            <label className="block text-gray-700 text-sm mb-2">Password</label>
+            <label className="mb-2 block text-sm text-gray-700">Password</label>
             <input
               name="password"
               value={form.password}
               onChange={onChange}
               type="password"
               placeholder="Enter your password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
-          <div className="text-right mb-6">
+          <div className="mb-6 text-right">
             <Link
               to="/otp?flow=forgot"
-              className="text-sm text-blue-700 font-semibold hover:underline"
+              className="text-sm font-semibold text-blue-700 hover:underline"
             >
               Forgot password?
             </Link>
@@ -104,14 +106,14 @@ const SignInPage = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-60"
+            className="w-full rounded-lg bg-blue-600 py-2 text-white transition duration-200 hover:bg-blue-700 disabled:opacity-60"
           >
             {isLoading ? "Signing In..." : "Sign In"}
           </button>
 
-          <p className="text-sm text-gray-600 mt-4 text-center">
+          <p className="mt-4 text-center text-sm text-gray-600">
             Don’t have an account?{" "}
-            <Link to="/" className="text-blue-700 font-semibold hover:underline">
+            <Link to="/" className="font-semibold text-blue-700 hover:underline">
               Sign Up
             </Link>
           </p>

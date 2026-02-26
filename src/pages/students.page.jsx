@@ -13,7 +13,13 @@ const Input = ({ label, value, onChange, placeholder = "" }) => (
   </div>
 );
 
-const Select = ({ label, value, onChange, options, placeholder = "Select" }) => (
+const Select = ({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Select",
+}) => (
   <div className="w-full">
     <label className="text-xs font-medium text-gray-600">{label}</label>
     <select
@@ -47,67 +53,65 @@ const Td = ({ children, className = "" }) => (
   </td>
 );
 
-const StudentsPage = () => {
+const StudentPage = () => {
   const navigate = useNavigate();
 
   // ---- filter state ----
   const [status, setStatus] = useState("");
-  const [regNo, setRegNo] = useState("");
-  const [completePapers, setCompletePapers] = useState("");
   const [district, setDistrict] = useState("");
   const [town, setTown] = useState("");
-  const [subject, setSubject] = useState("");
   const [studentName, setStudentName] = useState("");
+  const [grade, setGrade] = useState("");
+  const [subject, setSubject] = useState("");
+
+  // ---- modal state ----
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   // ---- dropdown options (replace with API later) ----
   const statusOptions = ["Active", "Inactive", "Blocked"];
-  const regNoOptions = ["REG-001", "REG-002", "REG-003"];
-  const completePapersOptions = ["0", "1-5", "6-10", "10+"];
   const districtOptions = ["Colombo", "Gampaha", "Kandy"];
   const townOptions = ["Dehiwala", "Maharagama", "Kiribathgoda", "Peradeniya"];
+  const gradeOptions = ["6", "7", "8", "9", "10", "11"];
   const subjectOptions = ["Maths", "Science", "English", "ICT", "History"];
 
   // ---- sample table data (replace with API later) ----
   const rows = useMemo(
     () => [
       {
-        regNo: "REG-001",
+        id: "STU-001",
         name: "Nimal Perera",
         email: "nimal@mail.com",
         district: "Colombo",
         town: "Dehiwala",
         address: "No 12, Galle Road",
         grade: "6",
-        subject: "Maths",
+        subjects: ["Maths", "Science", "English"],
         status: "Active",
         lastActive: "2026-01-22",
-        completePapers: "6-10",
       },
       {
-        regNo: "REG-002",
+        id: "STU-002",
         name: "Kavindi Silva",
         email: "kavindi@mail.com",
         district: "Gampaha",
         town: "Kiribathgoda",
         address: "No 88, Kandy Road",
         grade: "9",
-        subject: "Science",
+        subjects: ["Science", "ICT"],
         status: "Inactive",
         lastActive: "2026-01-10",
-        completePapers: "1-5",
       },
       {
-        regNo: "REG-003",
+        id: "STU-003",
         name: "Sahan Jayasooriya",
         email: "sahan@mail.com",
         district: "Kandy",
         town: "Peradeniya",
         address: "No 5, Temple Road",
         grade: "11",
-        subject: "English",
+        subjects: ["English", "History", "ICT"],
         status: "Active",
         lastActive: "2026-01-23",
-        completePapers: "10+",
       },
     ],
     []
@@ -117,19 +121,20 @@ const StudentsPage = () => {
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
       if (status && r.status !== status) return false;
-      if (regNo && r.regNo !== regNo) return false;
-      if (completePapers && r.completePapers !== completePapers) return false;
       if (district && r.district !== district) return false;
       if (town && r.town !== town) return false;
-      if (subject && r.subject !== subject) return false;
+      if (grade && r.grade !== grade) return false;
+      if (subject && !r.subjects.includes(subject)) return false;
       if (
         studentName &&
         !r.name.toLowerCase().includes(studentName.trim().toLowerCase())
-      )
+      ) {
         return false;
+      }
+
       return true;
     });
-  }, [rows, status, regNo, completePapers, district, town, subject, studentName]);
+  }, [rows, status, district, town, studentName, grade, subject]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -137,12 +142,11 @@ const StudentsPage = () => {
 
   const handleReset = () => {
     setStatus("");
-    setRegNo("");
-    setCompletePapers("");
     setDistrict("");
     setTown("");
-    setSubject("");
     setStudentName("");
+    setGrade("");
+    setSubject("");
   };
 
   const statusBadge = (value) => {
@@ -164,213 +168,243 @@ const StudentsPage = () => {
   };
 
   return (
-    <div className="flex w-full justify-center">
-      <div className="min-w-0 w-full max-w-[95vw] px-3 py-4 sm:px-6 sm:py-6">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
-              Student Management
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Search and review student records.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => navigate("/home")}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 hover:text-red-700"
-            title="Home"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 10.5 12 3l9 7.5" />
-              <path d="M5 9.5V21h14V9.5" />
-              <path d="M9 21v-6h6v6" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Filter Box */}
-        <form
-          onSubmit={handleSearch}
-          className="mt-5 border border-gray-200 bg-white p-4 sm:p-5"
-        >
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Select
-              label="Status"
-              value={status}
-              onChange={setStatus}
-              options={statusOptions}
-              placeholder="Select"
-            />
-
-            <Select
-              label="Registration No"
-              value={regNo}
-              onChange={setRegNo}
-              options={regNoOptions}
-              placeholder="Select"
-            />
-
-            <Select
-              label="Complete Papers"
-              value={completePapers}
-              onChange={setCompletePapers}
-              options={completePapersOptions}
-              placeholder="Select"
-            />
-
-            <Input
-              label="Student Name"
-              value={studentName}
-              onChange={setStudentName}
-              placeholder="Search by name"
-            />
-
-            <Select
-              label="District"
-              value={district}
-              onChange={setDistrict}
-              options={districtOptions}
-              placeholder="Select"
-            />
-
-            <Select
-              label="Town"
-              value={town}
-              onChange={setTown}
-              options={townOptions}
-              placeholder="Select"
-            />
-
-            <Select
-              label="Subject"
-              value={subject}
-              onChange={setSubject}
-              options={subjectOptions}
-              placeholder="Select"
-            />
-          </div>
-
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700"
-            >
-              Search
-            </button>
+    <>
+      <div className="flex w-full justify-center">
+        <div className="min-w-0 w-full max-w-[95vw] px-3 py-4 sm:px-6 sm:py-6">
+          {/* Header */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+                Enroll Student
+              </h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Search and review enrolled student records.
+              </p>
+            </div>
 
             <button
               type="button"
-              onClick={handleReset}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              onClick={() => navigate("/home")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 hover:text-red-700"
+              title="Home"
             >
-              Reset
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 10.5 12 3l9 7.5" />
+                <path d="M5 9.5V21h14V9.5" />
+                <path d="M9 21v-6h6v6" />
+              </svg>
             </button>
           </div>
 
-          <div className="mt-3 text-xs text-gray-500">
-            Total: {filteredRows.length}
-          </div>
-        </form>
+          {/* Filter Box */}
+          <form
+            onSubmit={handleSearch}
+            className="mt-5 border border-gray-200 bg-white p-4 sm:p-5"
+          >
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <Select
+                label="Status"
+                value={status}
+                onChange={setStatus}
+                options={statusOptions}
+                placeholder="Select"
+              />
 
-        {/* Table */}
-        <div className="mt-5 overflow-hidden border border-gray-200 bg-white">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-[1450px] table-fixed border-separate border-spacing-0">
-              <thead>
-                <tr>
-                  <Th className="w-[8%]">Reg No</Th>
-                  <Th className="w-[12%]">Student Name</Th>
-                  <Th className="w-[14%]">Email</Th>
-                  <Th className="w-[8%]">District</Th>
-                  <Th className="w-[8%]">Town</Th>
-                  <Th className="w-[14%]">Address</Th>
-                  <Th className="w-[6%]">Grade</Th>
-                  <Th className="w-[8%]">Subject</Th>
-                  <Th className="w-[8%]">Status</Th>
-                  <Th className="w-[10%]">Last Active</Th>
-                  <Th className="w-[10%]">Complete Papers</Th>
-                  <Th className="w-[14%] border-r-0 text-center">Operation</Th>
-                </tr>
-              </thead>
+              <Select
+                label="District"
+                value={district}
+                onChange={setDistrict}
+                options={districtOptions}
+                placeholder="Select"
+              />
 
-              <tbody className="bg-white">
-                {filteredRows.length === 0 ? (
+              <Select
+                label="Town"
+                value={town}
+                onChange={setTown}
+                options={townOptions}
+                placeholder="Select"
+              />
+
+              <Input
+                label="Name"
+                value={studentName}
+                onChange={setStudentName}
+                placeholder="Search by name"
+              />
+
+              <Select
+                label="Grade"
+                value={grade}
+                onChange={setGrade}
+                options={gradeOptions}
+                placeholder="Select"
+              />
+
+              <Select
+                label="Subjects"
+                value={subject}
+                onChange={setSubject}
+                options={subjectOptions}
+                placeholder="Select"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="submit"
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700"
+              >
+                Search
+              </button>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="mt-3 text-xs text-gray-500">
+              Total: {filteredRows.length}
+            </div>
+          </form>
+
+          {/* Table */}
+          <div className="mt-5 overflow-hidden border border-gray-200 bg-white">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[1400px] table-fixed border-separate border-spacing-0">
+                <thead>
                   <tr>
-                    <td
-                      className="px-6 py-10 text-center text-gray-500"
-                      colSpan={12}
-                    >
-                      No students found
-                    </td>
+                    <Th className="w-[15%]">Student Name</Th>
+                    <Th className="w-[8%]">Grade</Th>
+                    <Th className="w-[11%]">Subjects</Th>
+                    <Th className="w-[15%]">Email</Th>
+                    <Th className="w-[11%]">District</Th>
+                    <Th className="w-[11%]">Town</Th>
+                    <Th className="w-[17%]">Address</Th>
+                    <Th className="w-[12%]">Last Active Date</Th>
+                    <Th className="w-[10%] border-r-0">Status</Th>
                   </tr>
-                ) : (
-                  filteredRows.map((s) => (
-                    <tr key={s.regNo} className="hover:bg-gray-50/70">
-                      <Td className="truncate">{s.regNo}</Td>
-                      <Td className="truncate font-medium text-gray-800">
-                        {s.name}
-                      </Td>
-                      <Td className="truncate">{s.email}</Td>
-                      <Td className="truncate">{s.district}</Td>
-                      <Td className="truncate">{s.town}</Td>
-                      <Td className="truncate">{s.address}</Td>
-                      <Td className="truncate">{s.grade}</Td>
-                      <Td className="truncate">{s.subject}</Td>
-                      <Td>{statusBadge(s.status)}</Td>
-                      <Td className="truncate">{s.lastActive}</Td>
-                      <Td className="truncate">{s.completePapers}</Td>
+                </thead>
 
-                      <Td className="border-r-0 text-center">
-                        <div className="flex flex-wrap justify-center gap-2">
+                <tbody className="bg-white">
+                  {filteredRows.length === 0 ? (
+                    <tr>
+                      <td
+                        className="px-6 py-10 text-center text-gray-500"
+                        colSpan={9}
+                      >
+                        No students found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRows.map((s) => (
+                      <tr key={s.id} className="hover:bg-gray-50/70">
+                        <Td className="truncate font-medium text-gray-800">
+                          {s.name}
+                        </Td>
+
+                        <Td className="truncate">{s.grade}</Td>
+
+                        <Td className="text-center">
                           <button
                             type="button"
+                            onClick={() => setSelectedStudent(s)}
                             className="rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-blue-700"
                           >
                             View
                           </button>
+                        </Td>
 
-                          <button
-                            type="button"
-                            className="rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-amber-600"
-                          >
-                            Edit
-                          </button>
+                        <Td className="truncate">{s.email}</Td>
+                        <Td className="truncate">{s.district}</Td>
+                        <Td className="truncate">{s.town}</Td>
+                        <Td className="truncate">{s.address}</Td>
+                        <Td className="truncate">{s.lastActive}</Td>
+                        <Td className="border-r-0">{statusBadge(s.status)}</Td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-                          <button
-                            type="button"
-                            className="rounded-lg bg-red-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-red-700"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </Td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Footer */}
-          <div className="flex flex-col gap-2 border-t border-gray-200 bg-white px-4 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>Showing {filteredRows.length} record(s)</span>
-            <span>Sample local data</span>
+            {/* Footer */}
+            <div className="flex flex-col gap-2 border-t border-gray-200 bg-white px-4 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+              <span>Showing {filteredRows.length} record(s)</span>
+              <span>Sample local data</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Subjects Modal */}
+      {selectedStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg border border-gray-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Enrolled Subjects
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  {selectedStudent.name}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedStudent(null)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-5 py-4">
+              {selectedStudent.subjects.length === 0 ? (
+                <div className="text-sm text-gray-500">No subjects found</div>
+              ) : (
+                <div className="space-y-2">
+                  {selectedStudent.subjects.map((sub, index) => (
+                    <div
+                      key={`${selectedStudent.id}-${sub}-${index}`}
+                      className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
+                    >
+                      <span className="text-sm font-medium text-gray-700">
+                        {index + 1}. {sub}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end border-t border-gray-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setSelectedStudent(null)}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
-export default StudentsPage;
+export default StudentPage;
