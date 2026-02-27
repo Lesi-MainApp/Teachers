@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGetTeacherEnrollSubjectStudentsQuery } from "../api/teacherEnrollSubjectApi";
 
 const Input = ({ label, value, onChange, placeholder = "" }) => (
   <div className="w-full">
@@ -28,11 +29,15 @@ const Select = ({
       className="mt-1 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-300"
     >
       <option value="">{placeholder}</option>
-      {options.map((op) => (
-        <option key={String(op.value ?? op)} value={String(op.value ?? op)}>
-          {String(op.label ?? op)}
-        </option>
-      ))}
+      {options.map((op) => {
+        const value = String(op?.value ?? op ?? "");
+        const label = String(op?.label ?? op ?? "");
+        return (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        );
+      })}
     </select>
   </div>
 );
@@ -53,358 +58,317 @@ const Td = ({ children, className = "" }) => (
   </td>
 );
 
-const StudentPage = () => {
+const Studentspage = () => {
   const navigate = useNavigate();
 
-  // ---- filter state ----
-  const [status, setStatus] = useState("");
+  // filter inputs (same design)
   const [district, setDistrict] = useState("");
   const [town, setTown] = useState("");
   const [studentName, setStudentName] = useState("");
   const [grade, setGrade] = useState("");
   const [subject, setSubject] = useState("");
 
-  // ---- modal state ----
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  // actual query filters (search button apply)
+  const [appliedFilters, setAppliedFilters] = useState({
+    district: "",
+    town: "",
+    studentName: "",
+    grade: "",
+    subject: "",
+  });
 
-  // ---- dropdown options (replace with API later) ----
-  const statusOptions = ["Active", "Inactive", "Blocked"];
-  const districtOptions = ["Colombo", "Gampaha", "Kandy"];
-  const townOptions = ["Dehiwala", "Maharagama", "Kiribathgoda", "Peradeniya"];
-  const gradeOptions = ["6", "7", "8", "9", "10", "11"];
-  const subjectOptions = ["Maths", "Science", "English", "ICT", "History"];
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetTeacherEnrollSubjectStudentsQuery(appliedFilters);
 
-  // ---- sample table data (replace with API later) ----
-  const rows = useMemo(
-    () => [
-      {
-        id: "STU-001",
-        name: "Nimal Perera",
-        email: "nimal@mail.com",
-        district: "Colombo",
-        town: "Dehiwala",
-        address: "No 12, Galle Road",
-        grade: "6",
-        subjects: ["Maths", "Science", "English"],
-        status: "Active",
-        lastActive: "2026-01-22",
-      },
-      {
-        id: "STU-002",
-        name: "Kavindi Silva",
-        email: "kavindi@mail.com",
-        district: "Gampaha",
-        town: "Kiribathgoda",
-        address: "No 88, Kandy Road",
-        grade: "9",
-        subjects: ["Science", "ICT"],
-        status: "Inactive",
-        lastActive: "2026-01-10",
-      },
-      {
-        id: "STU-003",
-        name: "Sahan Jayasooriya",
-        email: "sahan@mail.com",
-        district: "Kandy",
-        town: "Peradeniya",
-        address: "No 5, Temple Road",
-        grade: "11",
-        subjects: ["English", "History", "ICT"],
-        status: "Active",
-        lastActive: "2026-01-23",
-      },
-    ],
-    []
-  );
+  const rows = useMemo(() => {
+    try {
+      return Array.isArray(data?.students) ? data.students : [];
+    } catch (err) {
+      console.error("students.page rows memo error:", err);
+      return [];
+    }
+  }, [data]);
 
-  // ---- filtering ----
-  const filteredRows = useMemo(() => {
-    return rows.filter((r) => {
-      if (status && r.status !== status) return false;
-      if (district && r.district !== district) return false;
-      if (town && r.town !== town) return false;
-      if (grade && r.grade !== grade) return false;
-      if (subject && !r.subjects.includes(subject)) return false;
-      if (
-        studentName &&
-        !r.name.toLowerCase().includes(studentName.trim().toLowerCase())
-      ) {
-        return false;
-      }
+  const districtOptions = useMemo(() => {
+    try {
+      return Array.isArray(data?.filters?.districts) ? data.filters.districts : [];
+    } catch (err) {
+      console.error("districtOptions error:", err);
+      return [];
+    }
+  }, [data]);
 
-      return true;
-    });
-  }, [rows, status, district, town, studentName, grade, subject]);
+  const townOptions = useMemo(() => {
+    try {
+      return Array.isArray(data?.filters?.towns) ? data.filters.towns : [];
+    } catch (err) {
+      console.error("townOptions error:", err);
+      return [];
+    }
+  }, [data]);
+
+  const gradeOptions = useMemo(() => {
+    try {
+      return Array.isArray(data?.filters?.grades) ? data.filters.grades : [];
+    } catch (err) {
+      console.error("gradeOptions error:", err);
+      return [];
+    }
+  }, [data]);
+
+  const subjectOptions = useMemo(() => {
+    try {
+      return Array.isArray(data?.filters?.subjects) ? data.filters.subjects : [];
+    } catch (err) {
+      console.error("subjectOptions error:", err);
+      return [];
+    }
+  }, [data]);
 
   const handleSearch = (e) => {
     e.preventDefault();
+    try {
+      setAppliedFilters({
+        district: district.trim(),
+        town: town.trim(),
+        studentName: studentName.trim(),
+        grade: grade.trim(),
+        subject: subject.trim(),
+      });
+    } catch (err) {
+      console.error("handleSearch error:", err);
+    }
   };
 
   const handleReset = () => {
-    setStatus("");
-    setDistrict("");
-    setTown("");
-    setStudentName("");
-    setGrade("");
-    setSubject("");
+    try {
+      setDistrict("");
+      setTown("");
+      setStudentName("");
+      setGrade("");
+      setSubject("");
+
+      setAppliedFilters({
+        district: "",
+        town: "",
+        studentName: "",
+        grade: "",
+        subject: "",
+      });
+    } catch (err) {
+      console.error("handleReset error:", err);
+    }
   };
 
-  const statusBadge = (value) => {
-    const map = {
-      Active: "border-green-200 bg-green-50 text-green-700",
-      Inactive: "border-yellow-200 bg-yellow-50 text-yellow-700",
-      Blocked: "border-red-200 bg-red-50 text-red-700",
-    };
+  const errorMessage = useMemo(() => {
+    try {
+      if (!error) return "";
+      if ("status" in error) {
+        return error?.data?.message || `Request failed (${error.status})`;
+      }
+      return error?.message || "Something went wrong";
+    } catch (err) {
+      console.error("errorMessage memo error:", err);
+      return "Something went wrong";
+    }
+  }, [error]);
 
-    return (
-      <span
-        className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-          map[value] || "border-gray-200 bg-gray-50 text-gray-700"
-        }`}
-      >
-        {value}
-      </span>
-    );
-  };
+  if (error) {
+    console.error("Teacher enrolled students API error:", error);
+  }
 
   return (
-    <>
-      <div className="flex w-full justify-center">
-        <div className="min-w-0 w-full max-w-[95vw] px-3 py-4 sm:px-6 sm:py-6">
-          {/* Header */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
-                Enroll Student
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Search and review enrolled student records.
-              </p>
-            </div>
+    <div className="flex w-full justify-center">
+      <div className="min-w-0 w-full max-w-[95vw] px-3 py-4 sm:px-6 sm:py-6">
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              Enroll Student
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Search and review enrolled student records.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/home")}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 hover:text-red-700"
+            title="Home"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 10.5 12 3l9 7.5" />
+              <path d="M5 9.5V21h14V9.5" />
+              <path d="M9 21v-6h6v6" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Filter Box */}
+        <form
+          onSubmit={handleSearch}
+          className="mt-5 border border-gray-200 bg-white p-4 sm:p-5"
+        >
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <Select
+              label="District"
+              value={district}
+              onChange={setDistrict}
+              options={districtOptions}
+              placeholder="Select"
+            />
+
+            <Select
+              label="Town"
+              value={town}
+              onChange={setTown}
+              options={townOptions}
+              placeholder="Select"
+            />
+
+            <Input
+              label="Name"
+              value={studentName}
+              onChange={setStudentName}
+              placeholder="Search by name"
+            />
+
+            <Select
+              label="Grade"
+              value={grade}
+              onChange={setGrade}
+              options={gradeOptions}
+              placeholder="Select"
+            />
+
+            <Select
+              label="Subjects"
+              value={subject}
+              onChange={setSubject}
+              options={subjectOptions}
+              placeholder="Select"
+            />
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700"
+            >
+              Search
+            </button>
 
             <button
               type="button"
-              onClick={() => navigate("/home")}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 hover:text-red-700"
-              title="Home"
+              onClick={handleReset}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
             >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 10.5 12 3l9 7.5" />
-                <path d="M5 9.5V21h14V9.5" />
-                <path d="M9 21v-6h6v6" />
-              </svg>
+              Reset
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  refetch();
+                } catch (err) {
+                  console.error("refetch button error:", err);
+                }
+              }}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+              Refresh
             </button>
           </div>
 
-          {/* Filter Box */}
-          <form
-            onSubmit={handleSearch}
-            className="mt-5 border border-gray-200 bg-white p-4 sm:p-5"
-          >
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <Select
-                label="Status"
-                value={status}
-                onChange={setStatus}
-                options={statusOptions}
-                placeholder="Select"
-              />
+          <div className="mt-3 text-xs text-gray-500">
+            Total: {Number(data?.total || rows.length || 0)}
+          </div>
 
-              <Select
-                label="District"
-                value={district}
-                onChange={setDistrict}
-                options={districtOptions}
-                placeholder="Select"
-              />
-
-              <Select
-                label="Town"
-                value={town}
-                onChange={setTown}
-                options={townOptions}
-                placeholder="Select"
-              />
-
-              <Input
-                label="Name"
-                value={studentName}
-                onChange={setStudentName}
-                placeholder="Search by name"
-              />
-
-              <Select
-                label="Grade"
-                value={grade}
-                onChange={setGrade}
-                options={gradeOptions}
-                placeholder="Select"
-              />
-
-              <Select
-                label="Subjects"
-                value={subject}
-                onChange={setSubject}
-                options={subjectOptions}
-                placeholder="Select"
-              />
+          {errorMessage ? (
+            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {errorMessage}
             </div>
+          ) : null}
+        </form>
 
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700"
-              >
-                Search
-              </button>
+        {/* Table */}
+        <div className="mt-5 overflow-hidden border border-gray-200 bg-white">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[1200px] table-fixed border-separate border-spacing-0">
+              <thead>
+                <tr>
+                  <Th className="w-[18%]">Student Name</Th>
+                  <Th className="w-[10%]">Grade</Th>
+                  <Th className="w-[14%]">Subject</Th>
+                  <Th className="w-[18%]">Email</Th>
+                  <Th className="w-[12%]">District</Th>
+                  <Th className="w-[12%]">Town</Th>
+                  <Th className="w-[16%] border-r-0">Address</Th>
+                </tr>
+              </thead>
 
-              <button
-                type="button"
-                onClick={handleReset}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              >
-                Reset
-              </button>
-            </div>
-
-            <div className="mt-3 text-xs text-gray-500">
-              Total: {filteredRows.length}
-            </div>
-          </form>
-
-          {/* Table */}
-          <div className="mt-5 overflow-hidden border border-gray-200 bg-white">
-            <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[1400px] table-fixed border-separate border-spacing-0">
-                <thead>
+              <tbody className="bg-white">
+                {isLoading || isFetching ? (
                   <tr>
-                    <Th className="w-[15%]">Student Name</Th>
-                    <Th className="w-[8%]">Grade</Th>
-                    <Th className="w-[11%]">Subjects</Th>
-                    <Th className="w-[15%]">Email</Th>
-                    <Th className="w-[11%]">District</Th>
-                    <Th className="w-[11%]">Town</Th>
-                    <Th className="w-[17%]">Address</Th>
-                    <Th className="w-[12%]">Last Active Date</Th>
-                    <Th className="w-[10%] border-r-0">Status</Th>
+                    <td
+                      className="px-6 py-10 text-center text-gray-500"
+                      colSpan={7}
+                    >
+                      Loading students...
+                    </td>
                   </tr>
-                </thead>
-
-                <tbody className="bg-white">
-                  {filteredRows.length === 0 ? (
-                    <tr>
-                      <td
-                        className="px-6 py-10 text-center text-gray-500"
-                        colSpan={9}
-                      >
-                        No students found
-                      </td>
+                ) : rows.length === 0 ? (
+                  <tr>
+                    <td
+                      className="px-6 py-10 text-center text-gray-500"
+                      colSpan={7}
+                    >
+                      No students found
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50/70">
+                      <Td className="truncate font-medium text-gray-800">
+                        {s.studentName || "-"}
+                      </Td>
+                      <Td className="truncate">{s.grade || "-"}</Td>
+                      <Td className="truncate">{s.subject || "-"}</Td>
+                      <Td className="truncate">{s.email || "-"}</Td>
+                      <Td className="truncate">{s.district || "-"}</Td>
+                      <Td className="truncate">{s.town || "-"}</Td>
+                      <Td className="truncate border-r-0">{s.address || "-"}</Td>
                     </tr>
-                  ) : (
-                    filteredRows.map((s) => (
-                      <tr key={s.id} className="hover:bg-gray-50/70">
-                        <Td className="truncate font-medium text-gray-800">
-                          {s.name}
-                        </Td>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                        <Td className="truncate">{s.grade}</Td>
-
-                        <Td className="text-center">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedStudent(s)}
-                            className="rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-blue-700"
-                          >
-                            View
-                          </button>
-                        </Td>
-
-                        <Td className="truncate">{s.email}</Td>
-                        <Td className="truncate">{s.district}</Td>
-                        <Td className="truncate">{s.town}</Td>
-                        <Td className="truncate">{s.address}</Td>
-                        <Td className="truncate">{s.lastActive}</Td>
-                        <Td className="border-r-0">{statusBadge(s.status)}</Td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Footer */}
-            <div className="flex flex-col gap-2 border-t border-gray-200 bg-white px-4 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-              <span>Showing {filteredRows.length} record(s)</span>
-              <span>Sample local data</span>
-            </div>
+          {/* Footer */}
+          <div className="flex flex-col gap-2 border-t border-gray-200 bg-white px-4 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <span>Showing {rows.length} record(s)</span>
+            <span>Teacher enrolled students</span>
           </div>
         </div>
       </div>
-
-      {/* Subjects Modal */}
-      {selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-lg border border-gray-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Enrolled Subjects
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  {selectedStudent.name}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setSelectedStudent(null)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="px-5 py-4">
-              {selectedStudent.subjects.length === 0 ? (
-                <div className="text-sm text-gray-500">No subjects found</div>
-              ) : (
-                <div className="space-y-2">
-                  {selectedStudent.subjects.map((sub, index) => (
-                    <div
-                      key={`${selectedStudent.id}-${sub}-${index}`}
-                      className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
-                    >
-                      <span className="text-sm font-medium text-gray-700">
-                        {index + 1}. {sub}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end border-t border-gray-200 px-5 py-4">
-              <button
-                type="button"
-                onClick={() => setSelectedStudent(null)}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 };
 
-export default StudentPage;
+export default Studentspage;

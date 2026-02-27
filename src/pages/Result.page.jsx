@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGetTeachersAssignedResultReportQuery } from "../api/teachersAssignedResultReportApi";
+
+const DEFAULT_PAPER_TYPE = "Daily Quiz";
 
 const Select = ({ label, value, onChange, options, placeholder = "Select" }) => (
   <div className="w-full">
@@ -10,11 +13,15 @@ const Select = ({ label, value, onChange, options, placeholder = "Select" }) => 
       className="mt-1 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-300"
     >
       <option value="">{placeholder}</option>
-      {options.map((op) => (
-        <option key={String(op.value ?? op)} value={String(op.value ?? op)}>
-          {String(op.label ?? op)}
-        </option>
-      ))}
+      {options.map((op) => {
+        const optionValue = String(op?.value ?? op ?? "");
+        const optionLabel = String(op?.label ?? op ?? "");
+        return (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        );
+      })}
     </select>
   </div>
 );
@@ -38,129 +45,106 @@ const Td = ({ children, className = "" }) => (
 const Result = () => {
   const navigate = useNavigate();
 
-  // ---- filter state ----
-  const [paperType, setPaperType] = useState("");
+  const [paperType, setPaperType] = useState(DEFAULT_PAPER_TYPE);
   const [subject, setSubject] = useState("");
 
-  // ---- modal state ----
+  const [appliedFilters, setAppliedFilters] = useState({
+    paperType: DEFAULT_PAPER_TYPE,
+    subject: "",
+  });
+
   const [selectedResult, setSelectedResult] = useState(null);
 
-  // ---- dropdown options ----
-  const paperTypeOptions = ["MCQ", "Essay", "Model Paper", "Unit Test"];
-  const subjectOptions = ["Maths", "Science", "English", "ICT"];
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetTeachersAssignedResultReportQuery(appliedFilters);
 
-  // ---- sample data (replace with API later) ----
-  const rows = useMemo(
-    () => [
-      {
-        id: "R-001",
-        studentName: "Nimal Perera",
-        grade: "Grade 06",
-        subject: "Maths",
-        paperName: "Maths Term 1",
-        paperType: "MCQ",
-        resultBreakdown: [
-          {
-            title: "Lesson Evaluation",
-            correctAnswers: "6/10",
-            marks: "60/100",
-            progress: "60%",
-          },
-          {
-            title: "Paper No - 1",
-            correctAnswers: "8/10",
-            marks: "80/100",
-            progress: "80%",
-          },
-        ],
-      },
-      {
-        id: "R-002",
-        studentName: "Kavindi Silva",
-        grade: "Grade 08",
-        subject: "Science",
-        paperName: "Science Unit Test",
-        paperType: "Unit Test",
-        resultBreakdown: [
-          {
-            title: "Unit Test",
-            correctAnswers: "7/10",
-            marks: "70/100",
-            progress: "70%",
-          },
-          {
-            title: "Paper No - 1",
-            correctAnswers: "9/10",
-            marks: "90/100",
-            progress: "90%",
-          },
-        ],
-      },
-      {
-        id: "R-003",
-        studentName: "Sahan Jayasooriya",
-        grade: "Grade 07",
-        subject: "English",
-        paperName: "English Term 1",
-        paperType: "Model Paper",
-        resultBreakdown: [
-          {
-            title: "Grammar Paper",
-            correctAnswers: "5/10",
-            marks: "50/100",
-            progress: "50%",
-          },
-          {
-            title: "Paper No - 1",
-            correctAnswers: "8/10",
-            marks: "80/100",
-            progress: "80%",
-          },
-        ],
-      },
-      {
-        id: "R-004",
-        studentName: "Ishara Fernando",
-        grade: "Grade 09",
-        subject: "ICT",
-        paperName: "ICT Term 1",
-        paperType: "Essay",
-        resultBreakdown: [
-          {
-            title: "Theory Paper",
-            correctAnswers: "6/10",
-            marks: "60/100",
-            progress: "60%",
-          },
-          {
-            title: "Paper No - 1",
-            correctAnswers: "7/10",
-            marks: "70/100",
-            progress: "70%",
-          },
-        ],
-      },
-    ],
-    []
-  );
+  const rows = useMemo(() => {
+    try {
+      return Array.isArray(data?.reports) ? data.reports : [];
+    } catch (err) {
+      console.error("Result.page rows memo error:", err);
+      return [];
+    }
+  }, [data]);
 
-  // ---- filtering ----
-  const filteredRows = useMemo(() => {
-    return rows.filter((r) => {
-      if (paperType && r.paperType !== paperType) return false;
-      if (subject && r.subject !== subject) return false;
-      return true;
-    });
-  }, [rows, paperType, subject]);
+  const rawPaperTypeOptions = useMemo(() => {
+    try {
+      return Array.isArray(data?.filters?.paperTypes) ? data.filters.paperTypes : [];
+    } catch (err) {
+      console.error("Result.page paperTypeOptions error:", err);
+      return [];
+    }
+  }, [data]);
+
+  const paperTypeOptions = useMemo(() => {
+    try {
+      const set = new Set(
+        [DEFAULT_PAPER_TYPE, ...rawPaperTypeOptions]
+          .map((v) => String(v || "").trim())
+          .filter(Boolean)
+      );
+      return Array.from(set);
+    } catch (err) {
+      console.error("Result.page merged paperTypeOptions error:", err);
+      return [DEFAULT_PAPER_TYPE];
+    }
+  }, [rawPaperTypeOptions]);
+
+  const subjectOptions = useMemo(() => {
+    try {
+      return Array.isArray(data?.filters?.subjects) ? data.filters.subjects : [];
+    } catch (err) {
+      console.error("Result.page subjectOptions error:", err);
+      return [];
+    }
+  }, [data]);
+
+  const errorMessage = useMemo(() => {
+    try {
+      if (!error) return "";
+      if ("status" in error) {
+        return error?.data?.message || `Request failed (${error.status})`;
+      }
+      return error?.message || "Something went wrong";
+    } catch (err) {
+      console.error("Result.page errorMessage memo error:", err);
+      return "Something went wrong";
+    }
+  }, [error]);
 
   const handleSearch = (e) => {
     e.preventDefault();
+    try {
+      setAppliedFilters({
+        paperType: paperType.trim(),
+        subject: subject.trim(),
+      });
+    } catch (err) {
+      console.error("Result.page handleSearch error:", err);
+    }
   };
 
   const handleReset = () => {
-    setPaperType("");
-    setSubject("");
+    try {
+      setPaperType(DEFAULT_PAPER_TYPE);
+      setSubject("");
+      setAppliedFilters({
+        paperType: DEFAULT_PAPER_TYPE,
+        subject: "",
+      });
+    } catch (err) {
+      console.error("Result.page handleReset error:", err);
+    }
   };
+
+  if (error) {
+    console.error("Teachers assigned result report API error:", error);
+  }
 
   return (
     <>
@@ -177,26 +161,42 @@ const Result = () => {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate("/home")}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 hover:text-red-700"
-              title="Home"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    refetch();
+                  } catch (err) {
+                    console.error("Result.page refetch button error:", err);
+                  }
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
-                <path d="M3 10.5 12 3l9 7.5" />
-                <path d="M5 9.5V21h14V9.5" />
-                <path d="M9 21v-6h6v6" />
-              </svg>
-            </button>
+                Refresh
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/home")}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 hover:text-red-700"
+                title="Home"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 10.5 12 3l9 7.5" />
+                  <path d="M5 9.5V21h14V9.5" />
+                  <path d="M9 21v-6h6v6" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Filter Box */}
@@ -240,43 +240,56 @@ const Result = () => {
             </div>
 
             <div className="mt-3 text-xs text-gray-500">
-              Total: {filteredRows.length}
+              Total: {Number(data?.total || rows.length || 0)}
             </div>
+
+            {errorMessage ? (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {errorMessage}
+              </div>
+            ) : null}
           </form>
 
           {/* Table */}
           <div className="mt-5 overflow-hidden border border-gray-200 bg-white">
             <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[1000px] table-fixed border-separate border-spacing-0">
+              <table className="w-full min-w-[900px] table-fixed border-separate border-spacing-0">
                 <thead>
                   <tr>
-                    <Th className="w-[26%]">Student Name</Th>
-                    <Th className="w-[24%]">Paper Name</Th>
-                    <Th className="w-[14%]">Grade</Th>
-                    <Th className="w-[16%]">Subject</Th>
-                    <Th className="w-[20%] border-r-0 text-center">Result</Th>
+                    <Th className="w-[34%]">Student Name</Th>
+                    <Th className="w-[18%]">Grade</Th>
+                    <Th className="w-[18%]">Subject</Th>
+                    <Th className="w-[30%] border-r-0 text-center">Result</Th>
                   </tr>
                 </thead>
 
                 <tbody className="bg-white">
-                  {filteredRows.length === 0 ? (
+                  {isLoading || isFetching ? (
                     <tr>
                       <td
                         className="px-6 py-10 text-center text-gray-500"
-                        colSpan={5}
+                        colSpan={4}
+                      >
+                        Loading results...
+                      </td>
+                    </tr>
+                  ) : rows.length === 0 ? (
+                    <tr>
+                      <td
+                        className="px-6 py-10 text-center text-gray-500"
+                        colSpan={4}
                       >
                         No results found
                       </td>
                     </tr>
                   ) : (
-                    filteredRows.map((r) => (
+                    rows.map((r) => (
                       <tr key={r.id} className="hover:bg-gray-50/70">
                         <Td className="truncate font-medium text-gray-800">
-                          {r.studentName}
+                          {r.studentName || "-"}
                         </Td>
-                        <Td className="truncate">{r.paperName}</Td>
-                        <Td className="truncate">{r.grade}</Td>
-                        <Td className="truncate">{r.subject}</Td>
+                        <Td className="truncate">{r.grade || "-"}</Td>
+                        <Td className="truncate">{r.subject || "-"}</Td>
                         <Td className="border-r-0 text-center">
                           <button
                             type="button"
@@ -295,8 +308,8 @@ const Result = () => {
 
             {/* Footer */}
             <div className="flex flex-col gap-2 border-t border-gray-200 bg-white px-4 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-              <span>Showing {filteredRows.length} record(s)</span>
-              <span>Sample local data</span>
+              <span>Showing {rows.length} record(s)</span>
+              <span>Teachers assigned result report</span>
             </div>
           </div>
         </div>
@@ -308,20 +321,21 @@ const Result = () => {
           <button
             type="button"
             onClick={() => setSelectedResult(null)}
-            className="absolute left-6 top-6 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-md transition hover:scale-105"
+            className="absolute left-6 top-6 inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg transition hover:bg-blue-700 hover:shadow-xl"
             title="Back"
           >
             <svg
               viewBox="0 0 24 24"
-              className="h-7 w-7"
+              className="h-5 w-5"
               fill="none"
               stroke="currentColor"
-              strokeWidth="3"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
               <path d="M15 18l-6-6 6-6" />
             </svg>
+            <span>Back</span>
           </button>
 
           <div className="flex min-h-screen items-center justify-center px-4 py-16">
@@ -330,7 +344,10 @@ const Result = () => {
                 <svg viewBox="0 0 64 64" className="h-12 w-12">
                   <circle cx="32" cy="24" r="12" fill="#F2B07B" />
                   <path d="M20 52c2-10 8-14 12-14s10 4 12 14" fill="#9CA3AF" />
-                  <path d="M22 20c2-8 7-12 10-12 5 0 10 4 12 12l-2 5H24z" fill="#6B7280" />
+                  <path
+                    d="M22 20c2-8 7-12 10-12 5 0 10 4 12 12l-2 5H24z"
+                    fill="#6B7280"
+                  />
                 </svg>
               </div>
 
@@ -344,6 +361,9 @@ const Result = () => {
                 <p className="mt-1 text-sm font-medium text-gray-700">
                   Grade : {selectedResult.grade}
                 </p>
+                <p className="mt-1 text-sm font-medium text-gray-700">
+                  Paper Type : {appliedFilters.paperType || selectedResult.paperType || "-"}
+                </p>
               </div>
 
               <div className="mt-6 overflow-hidden border border-gray-300 bg-white">
@@ -351,7 +371,7 @@ const Result = () => {
                   <thead>
                     <tr>
                       <th className="border-b border-r border-gray-300 px-3 py-3 text-[12px] font-semibold text-gray-700">
-                        Paper / Lesson
+                        Paper
                       </th>
                       <th className="border-b border-r border-gray-300 px-3 py-3 text-[12px] font-semibold text-gray-700">
                         Correct Answers
@@ -366,22 +386,34 @@ const Result = () => {
                   </thead>
 
                   <tbody>
-                    {selectedResult.resultBreakdown.map((item, index) => (
-                      <tr key={`${selectedResult.id}-${index}`}>
-                        <td className="border-b border-r border-gray-300 px-3 py-4 text-[12px] text-gray-700">
-                          {item.title}
-                        </td>
-                        <td className="border-b border-r border-gray-300 px-3 py-4 text-[12px] text-gray-700">
-                          {item.correctAnswers}
-                        </td>
-                        <td className="border-b border-r border-gray-300 px-3 py-4 text-[12px] text-gray-700">
-                          {item.marks}
-                        </td>
-                        <td className="border-b border-gray-300 px-3 py-4 text-[12px] text-gray-700">
-                          {item.progress}
+                    {Array.isArray(selectedResult.resultBreakdown) &&
+                    selectedResult.resultBreakdown.length > 0 ? (
+                      selectedResult.resultBreakdown.map((item, index) => (
+                        <tr key={`${selectedResult.id}-${index}`}>
+                          <td className="border-b border-r border-gray-300 px-3 py-4 text-[12px] text-gray-700">
+                            {item.title || "-"}
+                          </td>
+                          <td className="border-b border-r border-gray-300 px-3 py-4 text-[12px] text-gray-700">
+                            {item.correctAnswers || "-"}
+                          </td>
+                          <td className="border-b border-r border-gray-300 px-3 py-4 text-[12px] text-gray-700">
+                            {item.marks || "-"}
+                          </td>
+                          <td className="border-b border-gray-300 px-3 py-4 text-[12px] text-gray-700">
+                            {item.progress || "-"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="border-b border-gray-300 px-3 py-6 text-[12px] text-gray-500"
+                        >
+                          No result details found
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
